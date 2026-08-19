@@ -12,13 +12,13 @@ bot.catch((err) => {
 
 export async function registerCommands() {
   await bot.api.setMyCommands([
-    { command: "today", description: "Bugungi taom tavsiyasi" },
+    { command: "nima_ovqat", description: "Bugungi taom tavsiyasi" },
     { command: "help", description: "Yordam" },
   ]);
 }
 
 bot.command("help", async (ctx) => {
   await ctx.reply(
-    "\"Bugun nima ovqat?\" deb yozing yoki /today buyrug'ini yuboring — men sizga taom tavsiya qilaman.",
+    "\"Bugun nima ovqat?\" deb yozing yoki /nima_ovqat buyrug'ini yuboring — men sizga taom tavsiya qilaman.",
   );
 });

@@ -36,11 +36,11 @@ async function recommendToday(ctx: Context) {
 
 personal.command("start", async (ctx) => {
   await ctx.reply(
-    "Salom! Men — Nima ovqat? botiman. \"Bugun nima ovqat?\" deb yozing yoki /today buyrug'ini yuboring.",
+    "Salom! Men — Nima ovqat? botiman. \"Bugun nima ovqat?\" deb yozing yoki /nima_ovqat buyrug'ini yuboring.",
   );
 });
 
-personal.command("today", recommendToday);
+personal.command("nima_ovqat", recommendToday);
 
 personal.on("message:text", async (ctx) => {
   if (ctx.chat.type === "private" && NATURAL_LANGUAGE_TRIGGER.test(ctx.message.text)) {
