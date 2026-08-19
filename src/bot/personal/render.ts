@@ -10,11 +10,10 @@ const BUDGET_LABEL: Record<string, string> = {
 };
 
 export function formatMealMessage(meal: Meal): string {
-  const title = meal.nameEn ? `${meal.nameUz} (${meal.nameEn})` : meal.nameUz;
   const budget = BUDGET_LABEL[meal.budgetTier] ?? meal.budgetTier;
 
   return [
-    `🍽 **${title}**`,
+    `🍽 **${meal.nameUz}**`,
     "",
     `⏱ ${meal.cookTimeMinutes} daqiqa`,
     `👥 ${meal.servingsMin}–${meal.servingsMax} kishi`,
