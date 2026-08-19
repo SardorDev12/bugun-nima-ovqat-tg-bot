@@ -1,8 +1,6 @@
 # fly.io app config for Nima ovqat? bot
 # Deploy from the `main` branch only: `fly deploy`
-#
-# Set app = "<your-fly-app-name>" after running `fly apps create`.
-app = ""
+app = "nimaovqat"
 primary_region = "fra"
 
 [build]
