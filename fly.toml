@@ -1,0 +1,32 @@
+# fly.io app config for Nima ovqat? bot
+# Deploy from the `main` branch only: `fly deploy`
+#
+# Set app = "<your-fly-app-name>" after running `fly apps create`.
+app = ""
+primary_region = "fra"
+
+[build]
+
+[env]
+  PORT = "8080"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = false
+  auto_start_machines = true
+  min_machines_running = 1
+
+[[http_service.checks]]
+  interval = "30s"
+  timeout = "5s"
+  grace_period = "10s"
+  method = "GET"
+  path = "/healthz"
+
+[deploy]
+  release_command = "node dist/db/migrate.js"
