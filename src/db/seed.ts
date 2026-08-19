@@ -1,5 +1,5 @@
 import { db, pool } from "./client.js";
-import { meals } from "./schema.js";
+import { meals, userMealInteractions } from "./schema.js";
 
 type SeedMeal = typeof meals.$inferInsert;
 
@@ -224,6 +224,9 @@ const starterMeals: SeedMeal[] = [
 ];
 
 async function seed() {
+  // Clear interactions first — they reference meals via a foreign key.
+  await db.delete(userMealInteractions);
+  await db.delete(meals);
   await db.insert(meals).values(starterMeals);
   console.log(`Seeded ${starterMeals.length} meals.`);
   await pool.end();

@@ -1,4 +1,4 @@
-name: Seed meals table (run once)
+name: Seed meals table
 
 on:
   workflow_dispatch: {}
