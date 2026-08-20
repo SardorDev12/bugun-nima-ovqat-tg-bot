@@ -1,20 +1,20 @@
-import { Composer, type Context } from "grammy";
+import { Composer } from "grammy";
 import { eq } from "drizzle-orm";
-import { db } from "../../db/client.js";
 import { meals, userMealInteractions } from "../../db/schema.js";
 import { getOrCreateUser } from "../../db/users.js";
 import { rankMealsForUser } from "../../engine/meals.js";
+import type { BotContext } from "../context.js";
 import { buildMealKeyboard, formatMealMessage, formatRecipeMessage } from "./render.js";
 
-export const personal = new Composer();
+export const personal = new Composer<BotContext>();
 
 const NATURAL_LANGUAGE_TRIGGER =
   /nima\s*(ovqat|pishir)|bugun\s*nima|tez\s*tayyor|go'shtsiz\s*variant|what should i cook/i;
 
-async function recommendToday(ctx: Context) {
+async function recommendToday(ctx: BotContext) {
   if (!ctx.from) return;
-  const user = await getOrCreateUser(ctx.from.id);
-  const ranked = await rankMealsForUser(user.id);
+  const user = await getOrCreateUser(ctx.db, ctx.from.id);
+  const ranked = await rankMealsForUser(ctx.db, user.id);
 
   if (ranked.length === 0) {
     await ctx.reply("Hozircha sizga mos taom topilmadi. Keyinroq qayta urinib ko'ring.");
@@ -22,7 +22,7 @@ async function recommendToday(ctx: Context) {
   }
 
   const top = ranked[0].meal;
-  await db.insert(userMealInteractions).values({
+  await ctx.db.insert(userMealInteractions).values({
     userId: user.id,
     mealId: top.id,
     interactionType: "viewed",
@@ -50,7 +50,7 @@ personal.on("message:text", async (ctx) => {
 
 personal.callbackQuery(/^recipe:(.+)$/, async (ctx) => {
   const mealId = ctx.match[1];
-  const meal = await db.query.meals.findFirst({ where: eq(meals.id, mealId) });
+  const meal = await ctx.db.query.meals.findFirst({ where: eq(meals.id, mealId) });
   if (!meal) {
     await ctx.answerCallbackQuery({ text: "Taom topilmadi." });
     return;
@@ -62,15 +62,15 @@ personal.callbackQuery(/^recipe:(.+)$/, async (ctx) => {
 personal.callbackQuery(/^another:(.+)$/, async (ctx) => {
   if (!ctx.from) return;
   const currentMealId = ctx.match[1];
-  const user = await getOrCreateUser(ctx.from.id);
+  const user = await getOrCreateUser(ctx.db, ctx.from.id);
 
-  await db.insert(userMealInteractions).values({
+  await ctx.db.insert(userMealInteractions).values({
     userId: user.id,
     mealId: currentMealId,
     interactionType: "requested_another",
   });
 
-  const ranked = await rankMealsForUser(user.id);
+  const ranked = await rankMealsForUser(ctx.db, user.id);
   const next = ranked.find((r) => r.meal.id !== currentMealId)?.meal;
 
   if (!next) {
@@ -78,7 +78,7 @@ personal.callbackQuery(/^another:(.+)$/, async (ctx) => {
     return;
   }
 
-  await db.insert(userMealInteractions).values({
+  await ctx.db.insert(userMealInteractions).values({
     userId: user.id,
     mealId: next.id,
     interactionType: "viewed",

@@ -1,8 +1,8 @@
 import { eq } from "drizzle-orm";
-import { db } from "./client.js";
 import { users } from "./schema.js";
+import type { Db } from "./types.js";
 
-export async function getOrCreateUser(telegramUserId: number) {
+export async function getOrCreateUser(db: Db, telegramUserId: number) {
   const existing = await db.query.users.findFirst({
     where: eq(users.telegramUserId, telegramUserId),
   });

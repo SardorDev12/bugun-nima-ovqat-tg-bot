@@ -1,0 +1,11 @@
+# Cloudflare Workers config for Nima ovqat? bot
+# Deploy from the `main` branch only: `npm run deploy`
+#
+# account_id is auto-resolved from the CLOUDFLARE_API_TOKEN at deploy time.
+# Only add `account_id = "..."` here if that token spans multiple accounts.
+name = "nima-ovqat-bot"
+main = "src/worker.ts"
+compatibility_date = "2024-09-23"
+
+[observability]
+enabled = true

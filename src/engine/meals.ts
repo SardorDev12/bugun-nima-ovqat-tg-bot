@@ -1,12 +1,12 @@
 import { and, eq, gte } from "drizzle-orm";
-import { db } from "../db/client.js";
 import { meals, userMealInteractions, users } from "../db/schema.js";
+import type { Db } from "../db/types.js";
 import { filterHardRestrictions } from "./filters.js";
 import { scoreMeal, type RecommendationConstraints } from "./score.js";
 
 const HISTORY_WINDOW_DAYS = 7;
 
-async function getRecentMealIds(userId: string): Promise<Set<string>> {
+async function getRecentMealIds(db: Db, userId: string): Promise<Set<string>> {
   const since = new Date(Date.now() - HISTORY_WINDOW_DAYS * 24 * 60 * 60 * 1000);
   const rows = await db
     .select({ mealId: userMealInteractions.mealId })
@@ -31,13 +31,14 @@ export interface RankedMeal {
  * result plus fall back to the next one for "🔄 Another option".
  */
 export async function rankMealsForUser(
+  db: Db,
   userId: string,
   constraints: RecommendationConstraints = {},
 ): Promise<RankedMeal[]> {
   const [user, allMeals, recentMealIds] = await Promise.all([
     db.query.users.findFirst({ where: eq(users.id, userId) }),
     db.select().from(meals),
-    getRecentMealIds(userId),
+    getRecentMealIds(db, userId),
   ]);
 
   if (!user) {

@@ -1,24 +1,33 @@
 import { Bot } from "grammy";
-import { env } from "../config/env.js";
+import { createDb } from "../db/edgeClient.js";
+import type { BotContext, Env } from "./context.js";
 import { personal } from "./personal/index.js";
 
-export const bot = new Bot(env.BOT_TOKEN);
+/**
+ * Builds a fresh Bot per request. Workers has no persistent boot lifecycle —
+ * secrets only arrive via the `env` param passed to fetch() — so there's no
+ * module-level singleton the way an always-on Node server would have one.
+ */
+export function createBot(env: Env): Bot<BotContext> {
+  const bot = new Bot<BotContext>(env.BOT_TOKEN);
+  const db = createDb(env.DATABASE_URL);
 
-bot.use(personal);
+  bot.use((ctx, next) => {
+    ctx.db = db;
+    return next();
+  });
 
-bot.catch((err) => {
-  console.error("Bot error:", err.error);
-});
+  bot.use(personal);
 
-export async function registerCommands() {
-  await bot.api.setMyCommands([
-    { command: "nima_ovqat", description: "Bugungi taom tavsiyasi" },
-    { command: "help", description: "Yordam" },
-  ]);
+  bot.command("help", async (ctx) => {
+    await ctx.reply(
+      "\"Bugun nima ovqat?\" deb yozing yoki /nima_ovqat buyrug'ini yuboring — men sizga taom tavsiya qilaman.",
+    );
+  });
+
+  bot.catch((err) => {
+    console.error("Bot error:", err.error);
+  });
+
+  return bot;
 }
-
-bot.command("help", async (ctx) => {
-  await ctx.reply(
-    "\"Bugun nima ovqat?\" deb yozing yoki /nima_ovqat buyrug'ini yuboring — men sizga taom tavsiya qilaman.",
-  );
-});

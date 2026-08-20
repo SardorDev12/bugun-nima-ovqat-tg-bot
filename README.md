@@ -5,8 +5,10 @@ requirements and `docs/ARCHITECTURE.md` for technical design.
 
 ## Stack
 
-Node.js + TypeScript, [grammY](https://grammy.dev), PostgreSQL via
-[Drizzle ORM](https://orm.drizzle.team), deployed on [Fly.io](https://fly.io).
+TypeScript on [Cloudflare Workers](https://workers.cloudflare.com),
+[grammY](https://grammy.dev), PostgreSQL (Neon) via
+[Drizzle ORM](https://orm.drizzle.team) — the bot talks to Neon over HTTP
+(`@neondatabase/serverless`), since Workers has no raw TCP sockets.
 
 ## Local setup
 
@@ -15,44 +17,38 @@ npm install
 cp .env.example .env   # fill in BOT_TOKEN, DATABASE_URL, WEBHOOK_SECRET
 npm run db:migrate
 npm run db:seed
-npm run dev
+npm run dev             # wrangler dev
 ```
 
-Local dev runs the webhook server without registering a public webhook
-(leave `PUBLIC_URL` empty) — use a tool like `ngrok`/`cloudflared` and set
-`PUBLIC_URL` if you want to test against real Telegram updates, or point a
-temporary webhook at the tunnel URL manually.
+`wrangler dev` runs the Worker locally. To test against real Telegram
+updates, expose it with a tunnel (e.g. `cloudflared tunnel --url
+http://localhost:8787`) and run `npm run setup:webhook` with `PUBLIC_URL`
+set to the tunnel URL.
 
-## Deploy (Fly.io)
+## Deploy (Cloudflare Workers)
 
 Deploys are automated via GitHub Actions (`.github/workflows/deploy.yml`):
-every push to `main` runs `flyctl deploy`. One-time setup:
+every push to `main` runs the migration, `wrangler deploy`, and registers
+the Telegram webhook. One-time setup:
 
-```bash
-fly apps create <app-name>   # then set `app = "<app-name>"` in fly.toml
-fly secrets set BOT_TOKEN=... DATABASE_URL=... WEBHOOK_SECRET=... PUBLIC_URL=https://<app-name>.fly.dev
-```
+1. Create a Cloudflare API token (dashboard → My Profile → API Tokens →
+   "Edit Cloudflare Workers" template) — no payment method required.
+2. Add these as GitHub repo secrets (Settings → Secrets and variables →
+   Actions):
+   - `CLOUDFLARE_API_TOKEN` — the token from step 1
+   - `BOT_TOKEN`, `DATABASE_URL`, `WEBHOOK_SECRET` — same values as `.env`
+   - `PUBLIC_URL` — the Worker's URL, e.g.
+     `https://nima-ovqat-bot.<your-subdomain>.workers.dev` (find your
+     subdomain in the Cloudflare dashboard; the Worker name comes from
+     `wrangler.toml`)
+3. Push to `main` (or trigger the workflow manually) to deploy.
 
-App secrets (`BOT_TOKEN`, `DATABASE_URL`, `WEBHOOK_SECRET`, `PUBLIC_URL`) live
-only on Fly — they're set once via `fly secrets set` above and persist across
-deploys, so they never need to touch GitHub or CI.
+`BOT_TOKEN`, `DATABASE_URL`, and `WEBHOOK_SECRET` are set as Worker secrets
+on every deploy via `wrangler secret put` (idempotent) — they never need a
+separate one-time setup step the way Fly's did.
 
-The GitHub Actions workflow itself needs exactly one repo secret to
-authenticate `flyctl`:
-
-1. Generate a deploy token: `fly tokens create deploy -x 999999h`
-2. Add it in GitHub: repo Settings → Secrets and variables → Actions →
-   New repository secret → name it `FLY_API_TOKEN`, paste the token value.
-
-After that, pushing to `main` deploys automatically. To deploy manually
-instead: `fly deploy` (needs `flyctl` installed and authenticated locally).
-
-`fly deploy` runs Drizzle migrations automatically via the `release_command`
-in `fly.toml`. Seed the meals table once after the first deploy:
-
-```bash
-fly ssh console -C "node dist/db/seed.js"
-```
+To deploy manually instead: `npm run build && node dist/db/migrate.js &&
+npm run deploy` (needs `wrangler` authenticated locally).
 
 ## Branching
 

@@ -9,23 +9,26 @@
 
 | Layer | Choice | Why |
 |---|---|---|
-| Runtime | Node.js 20 LTS + TypeScript | Team preference; TS catches schema/type drift between bot, engine, and DB. |
-| Bot framework | [grammY](https://grammy.dev) | TS-first, built-in webhook helper, session/conversations plugins cover group flows in §6–§9 of the PRD without extra libraries. |
+| Runtime | Cloudflare Workers + TypeScript | Free with no card required and no idle-suspension risk (unlike Fly's trial, which suspended the whole app — see hosting plan below). Request-scoped execution model fits a webhook-driven bot naturally. |
+| Bot framework | [grammY](https://grammy.dev) | TS-first, has a native Cloudflare Workers (module worker) adapter, session/conversations plugins cover group flows in §6–§9 of the PRD without extra libraries. |
 | Database | PostgreSQL (Neon, free tier) | Matches PRD §39 architecture diagram; Neon's free plan (0.5GB storage, autosuspend when idle) costs $0 and needs no server to manage. |
-| ORM | [Drizzle ORM](https://orm.drizzle.team) | Lightweight (no bundled query-engine binary, unlike Prisma) — matters on a 256MB Fly.io machine. SQL-like, easy migrations. |
-| Scheduler | In-process interval loop (no cron daemon) | Every 60s, query groups whose `recommendation_time` (converted to UTC via their `timezone`) matches now; fire the daily message. One process, zero extra infra. |
-| Hosting | Fly.io (shared-cpu-1x, 256MB, single always-on machine) | Decided earlier — see hosting plan below. |
-| Bot transport | Webhook, not polling | Fly.io machines get a public HTTPS URL for free; a webhook avoids a continuous poll loop burning CPU credits, and delivers updates to the bot the instant Telegram receives them. |
-| Logging | pino | Minimal overhead, structured JSON logs (useful since Fly's free tier has no persistent log storage — pipe to `fly logs` or a free tier like Axiom later). |
+| DB driver (bot) | [`@neondatabase/serverless`](https://github.com/neondatabase/serverless) + `drizzle-orm/neon-http` | Workers has no raw TCP sockets, so the bot talks to Neon over HTTP. Cheap to instantiate per request — no connection pool to manage. |
+| DB driver (scripts) | `pg` + `drizzle-orm/node-postgres` | The migrate/seed scripts run on regular Node (GitHub Actions), which has TCP — no reason to give those up the simpler driver. |
+| ORM | [Drizzle ORM](https://orm.drizzle.team) | Lightweight, SQL-like, easy migrations; same schema definitions work against both drivers above. |
+| Scheduler (Phase 2) | Cloudflare Cron Triggers | Workers has no persistent process to run an interval loop in — cron triggers are the platform-native equivalent, firing a scheduled handler that queries due groups and sends messages. |
+| Hosting | Cloudflare Workers (free plan, 100k requests/day) | Decided after Fly's trial-account suspension — see hosting plan below. |
+| Bot transport | Webhook, not polling | Workers only runs code in response to a request — there's no long-running process to poll from, so webhook is the only option, and a good one: Telegram's POST triggers the Worker directly, no cold-start "sleep" the way VM free tiers have. |
+| Logging | `console.log`/`console.error` | Cloudflare's dashboard has a live log tail (`wrangler tail`) and request logs built in — no need for a separate structured-logging library. |
 
 ---
 
 ## 2. Hosting plan (recap)
 
-- Single Fly.io app, one always-on machine (`shared-cpu-1x`, 256MB) — free within Fly's monthly allowance for this traffic level.
-- No Fly volume needed — the database lives on Neon, not on-machine, so the app itself is stateless and trivially redeployable.
-- Secrets (`BOT_TOKEN`, `DATABASE_URL`, `WEBHOOK_SECRET`) set via `fly secrets set`, never committed.
-- One Dockerfile, one `fly.toml`. `fly deploy` from the `main` branch only (see §7).
+- Cloudflare Workers, free plan — no payment method required, no idle-suspension risk. (Fly.io was tried first; its trial account suspended the whole app once resource limits were hit, and avoiding a card entirely was the priority — see chat history for the full comparison.)
+- Stateless by design — every request is independent, so there's no persistent process, no volume, nothing to keep "warm."
+- The database lives on Neon (unaffected by this change) — same Postgres instance, just accessed over HTTP instead of TCP from the bot.
+- Secrets (`BOT_TOKEN`, `DATABASE_URL`, `WEBHOOK_SECRET`) set via `wrangler secret put`, never committed.
+- One `wrangler.toml`, one entry point (`src/worker.ts`). Deploys run from the `main` branch only (see §7).
 
 ---
 
@@ -33,35 +36,36 @@
 
 ```text
 src/
+  worker.ts              # Cloudflare Workers entry point: fetch() -> webhook route + /healthz
   bot/
-    index.ts            # grammY Bot instance, middleware wiring
-    personal/            # Personal Mode composer (§5 of PRD)
-    group/                # Group Mode composer (§6–§23)
-      onboarding.ts       # enable Group Mode, preference wizard (§11)
-      recommendation.ts   # daily message composition + buttons (§8–§9)
-      voting.ts            # vote tallying, "Kelishdik!" threshold (§9)
-      admin.ts              # admin-only settings commands (§22)
-    commands/             # /today /another /recipe /vote /pantry /history ...
-    middleware/           # context-mode detection (private vs group), auth
+    index.ts             # createBot(env): grammY Bot factory, middleware wiring
+    context.ts            # Env (Worker bindings) + BotContext (grammY Context + ctx.db) types
+    personal/             # Personal Mode composer (§5 of PRD)
+    group/                 # Group Mode composer (§6–§23)
+      onboarding.ts        # enable Group Mode, preference wizard (§11)
+      recommendation.ts    # daily message composition + buttons (§8–§9)
+      voting.ts             # vote tallying, "Kelishdik!" threshold (§9)
+      admin.ts               # admin-only settings commands (§22)
+    commands/              # /nima_ovqat /another /recipe /vote /pantry /history ...
   engine/
-    score.ts             # individual + group scoring (§28)
-    filters.ts           # hard dietary-restriction filtering
-    meals.ts             # meal lookup/query helpers
+    score.ts              # individual + group scoring (§28)
+    filters.ts            # hard dietary-restriction filtering
+    meals.ts              # meal lookup/query helpers (takes db as a parameter)
   scheduler/
-    worker.ts            # interval loop, timezone-aware trigger (§24)
+    cron.ts               # Phase 2: Cloudflare Cron Trigger handler, timezone-aware (§24)
   db/
-    schema.ts            # Drizzle table defs (§4 below)
-    client.ts            # Neon connection
+    schema.ts             # Drizzle table defs (§4 below) — shared by both drivers
+    edgeClient.ts          # createDb(): Neon HTTP driver, used by the Worker at request time
+    client.ts               # Neon TCP driver (pg), used only by migrate.ts/seed.ts on Node
+    migrate.ts
+    seed.ts
     migrations/
-  server/
-    index.ts             # tiny HTTP server: webhook endpoint + /healthz
-  config/
-    env.ts               # typed env var loading/validation
+  scripts/
+    setup.ts               # one-off: registers Telegram commands + webhook after a deploy
 docs/
   PRD.md
   ARCHITECTURE.md
-Dockerfile
-fly.toml
+wrangler.toml
 ```
 
 ---
@@ -84,14 +88,14 @@ meals
   name_uz            text
   name_en            text
   cuisine            text            -- uzbek | central_asian | russian | ...
-  ingredients        text[]
+  ingredients        text[]          -- bare ingredient names, used for filtering/matching
+  ingredient_details text[]          -- same ingredients formatted with quantities for display
   cook_time_minutes  int
   servings_min       int
   servings_max       int
   budget_tier        text            -- cheap | normal | any
   dietary_tags       text[]          -- vegetarian, no_beef, halal, etc.
-  season             text[]          -- optional seasonality
-  recipe_text        text
+  recipe_steps       text[]          -- ordered step-by-step instructions
 
 groups
   id                       uuid pk
@@ -129,20 +133,26 @@ group_meal_interactions
 
 ---
 
-## 5. Scheduler design
+## 5. Scheduler design (Phase 2)
+
+Workers has no persistent process to run an interval loop in, so this uses
+a [Cloudflare Cron Trigger](https://developers.cloudflare.com/workers/configuration/cron-triggers/)
+instead — a `scheduled(event, env, ctx)` handler configured in `wrangler.toml`
+to fire every few minutes:
 
 ```text
-every 60s:
+on cron tick (every ~5 min, per wrangler.toml [triggers] crons):
   now_utc = current time
   SELECT groups WHERE recommendation_enabled = true
   for each group:
     local_now = now_utc converted to group.timezone
-    if local_now.hour:minute == group.recommendation_time (± the 60s tick window):
+    if local_now falls within the tick window around group.recommendation_time:
       if not already sent today (check group_meal_interactions for today's "viewed"):
         run recommendation engine for group -> pick meal -> send message
 ```
 
-Runs inside the same process as the webhook server (one Fly machine, one Node process) — no separate worker dyno, keeping the whole thing inside the free allowance.
+Cron Triggers are part of the same free Workers plan — no separate service,
+no extra cost.
 
 ---
 
@@ -159,14 +169,16 @@ Implements PRD §28 scoring directly:
 ## 7. Deployment flow
 
 - All work happens on `develop`; `main` is deploy-only and only updated when told to merge.
-- `fly deploy` is run against `main` — i.e., deploys happen from the branch that's been explicitly promoted, not automatically on every `develop` push.
-- Migrations run via a `fly deploy` release command (Drizzle migration script) before the new machine takes traffic.
+- `wrangler deploy` is run against `main` via GitHub Actions — i.e., deploys happen from the branch that's been explicitly promoted, not automatically on every `develop` push.
+- Migrations run as an explicit step (`node dist/db/migrate.js`) before `wrangler deploy`, so the schema is ready before the new code goes live.
+- `wrangler secret put` runs after deploy (idempotent — safe on every run) to keep Worker secrets in sync with GitHub Actions secrets.
+- The Telegram webhook is (re-)registered via `src/scripts/setup.ts` as the final step — cheap and idempotent, so re-running it on every deploy is fine.
 
 ---
 
 ## 8. Build order (maps to PRD §40)
 
-1. **Phase 1** — `bot/personal`, `engine/`, `meals` table seeded with a starter dataset, webhook + Fly deploy working end-to-end.
-2. **Phase 2** — `bot/group/*`, `scheduler/worker.ts`, `groups`/`group_members`/`group_meal_interactions` tables, voting.
+1. **Phase 1** — `bot/personal`, `engine/`, `meals` table seeded with a starter dataset, webhook + Cloudflare Workers deploy working end-to-end.
+2. **Phase 2** — `bot/group/*`, `scheduler/cron.ts` (Cloudflare Cron Trigger), `groups`/`group_members`/`group_meal_interactions` tables, voting.
 3. **Phase 3** — pantry, member-level preferences, better ranking.
 4. **Phase 4** — monetization hooks (deferred, no infra impact now).
