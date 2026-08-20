@@ -24,7 +24,20 @@ export function formatMealMessage(meal: Meal): string {
 export function buildMealKeyboard(mealId: string): InlineKeyboard {
   return new InlineKeyboard()
     .text("👨‍🍳 Retsept", `recipe:${mealId}`)
-    .text("🔄 Boshqa variant", `another:${mealId}`)
-    .row()
-    .text("💾 Saqlash", `save:${mealId}`);
+    .text("🔄 Boshqa variant", `another:${mealId}`);
+}
+
+export function formatRecipeMessage(meal: Meal): string {
+  const ingredientLines = meal.ingredientDetails.map((line) => `• ${line}`).join("\n");
+  const stepLines = meal.recipeSteps.map((step, i) => `${i + 1}. ${step}`).join("\n");
+
+  return [
+    `👨‍🍳 **${meal.nameUz}**`,
+    "",
+    "**Kerakli mahsulotlar:**",
+    ingredientLines,
+    "",
+    "**Tayyorlash tartibi:**",
+    stepLines,
+  ].join("\n");
 }

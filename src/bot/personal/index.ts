@@ -4,7 +4,7 @@ import { db } from "../../db/client.js";
 import { meals, userMealInteractions } from "../../db/schema.js";
 import { getOrCreateUser } from "../../db/users.js";
 import { rankMealsForUser } from "../../engine/meals.js";
-import { buildMealKeyboard, formatMealMessage } from "./render.js";
+import { buildMealKeyboard, formatMealMessage, formatRecipeMessage } from "./render.js";
 
 export const personal = new Composer();
 
@@ -56,10 +56,7 @@ personal.callbackQuery(/^recipe:(.+)$/, async (ctx) => {
     return;
   }
   await ctx.answerCallbackQuery();
-  await ctx.reply(
-    `👨‍🍳 **${meal.nameUz}**\n\nMasalliqlar: ${meal.ingredients.join(", ")}\n\n${meal.recipeText}`,
-    { parse_mode: "Markdown" },
-  );
+  await ctx.reply(formatRecipeMessage(meal), { parse_mode: "Markdown" });
 });
 
 personal.callbackQuery(/^another:(.+)$/, async (ctx) => {
@@ -92,18 +89,4 @@ personal.callbackQuery(/^another:(.+)$/, async (ctx) => {
     parse_mode: "Markdown",
     reply_markup: buildMealKeyboard(next.id),
   });
-});
-
-personal.callbackQuery(/^save:(.+)$/, async (ctx) => {
-  if (!ctx.from) return;
-  const mealId = ctx.match[1];
-  const user = await getOrCreateUser(ctx.from.id);
-
-  await db.insert(userMealInteractions).values({
-    userId: user.id,
-    mealId,
-    interactionType: "saved",
-  });
-
-  await ctx.answerCallbackQuery({ text: "Saqlandi!" });
 });
