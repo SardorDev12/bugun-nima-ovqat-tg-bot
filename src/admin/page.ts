@@ -142,7 +142,7 @@ export const ADMIN_PAGE_HTML = `<!DOCTYPE html>
 
   <section id="tab-users" class="panel hidden">
     <table>
-      <thead><tr><th>Telegram ID</th><th>Language</th><th>Dietary prefs</th><th>Disliked</th><th>Joined</th></tr></thead>
+      <thead><tr><th>Username</th><th>Telegram ID</th><th>Language</th><th>Dietary prefs</th><th>Disliked</th><th>Joined</th></tr></thead>
       <tbody id="users-tbody"></tbody>
     </table>
   </section>
@@ -309,13 +309,14 @@ async function loadUsers() {
   const list = await api("/admin/api/users");
   $("#users-tbody").innerHTML = list.map((u) => \`
     <tr>
+      <td>\${u.username ? "@" + escapeHtml(u.username) : '<span class="muted">–</span>'}</td>
       <td>\${u.telegramUserId}</td>
       <td>\${escapeHtml(u.language)}</td>
       <td>\${escapeHtml((u.dietaryPreferences || []).join(", ")) || "–"}</td>
       <td>\${escapeHtml((u.dislikedIngredients || []).join(", ")) || "–"}</td>
       <td>\${new Date(u.createdAt).toLocaleDateString()}</td>
     </tr>
-  \`).join("") || '<tr><td class="muted" colspan="5">No users yet</td></tr>';
+  \`).join("") || '<tr><td class="muted" colspan="6">No users yet</td></tr>';
 }
 
 loadMeals();

@@ -12,6 +12,7 @@ export const users = pgTable("users", {
   telegramUserId: bigint("telegram_user_id", { mode: "number" })
     .notNull()
     .unique(),
+  username: text("username"), // Telegram @handle — optional, not every user sets one
   language: text("language").notNull().default("uz"),
   dietaryPreferences: text("dietary_preferences").array().notNull().default([]),
   dislikedIngredients: text("disliked_ingredients").array().notNull().default([]),

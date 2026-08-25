@@ -13,7 +13,7 @@ const NATURAL_LANGUAGE_TRIGGER =
 
 async function recommendToday(ctx: BotContext) {
   if (!ctx.from) return;
-  const user = await getOrCreateUser(ctx.db, ctx.from.id);
+  const user = await getOrCreateUser(ctx.db, ctx.from.id, ctx.from.username);
   const ranked = await rankMealsForUser(ctx.db, user.id);
 
   if (ranked.length === 0) {
@@ -62,7 +62,7 @@ personal.callbackQuery(/^recipe:(.+)$/, async (ctx) => {
 personal.callbackQuery(/^another:(.+)$/, async (ctx) => {
   if (!ctx.from) return;
   const currentMealId = ctx.match[1];
-  const user = await getOrCreateUser(ctx.db, ctx.from.id);
+  const user = await getOrCreateUser(ctx.db, ctx.from.id, ctx.from.username);
 
   await ctx.db.insert(userMealInteractions).values({
     userId: user.id,
