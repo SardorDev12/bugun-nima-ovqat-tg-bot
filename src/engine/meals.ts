@@ -51,6 +51,6 @@ export async function rankMealsForUser(
   });
 
   return eligible
-    .map((meal) => ({ meal, score: scoreMeal(meal, recentMealIds, constraints) }))
+    .map((meal) => ({ meal, score: scoreMeal(meal, recentMealIds, constraints, user.pantry) }))
     .sort((a, b) => b.score - a.score);
 }

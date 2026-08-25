@@ -16,6 +16,10 @@ export const users = pgTable("users", {
   language: text("language").notNull().default("uz"),
   dietaryPreferences: text("dietary_preferences").array().notNull().default([]),
   dislikedIngredients: text("disliked_ingredients").array().notNull().default([]),
+  // Ingredients the user has at home (/mahsulotlarim) — boosts, never filters,
+  // recommendations toward meals they can already make (PRD §13's pantry idea,
+  // applied to personal mode since Group Mode doesn't exist yet).
+  pantry: text("pantry").array().notNull().default([]),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

@@ -27,8 +27,13 @@ export function buildMealKeyboard(mealId: string): InlineKeyboard {
     .text("🔄 Boshqa variant", `another:${mealId}`);
 }
 
-export function formatRecipeMessage(meal: Meal): string {
-  const ingredientLines = meal.ingredientDetails.map((line) => `• ${line}`).join("\n");
+export function formatRecipeMessage(meal: Meal, pantry: readonly string[] = []): string {
+  const ingredientLines = meal.ingredientDetails
+    .map((line, i) => {
+      const haveIt = pantry.includes(meal.ingredients[i]);
+      return `${haveIt ? "✅" : "•"} ${line}`;
+    })
+    .join("\n");
   const stepLines = meal.recipeSteps.map((step, i) => `${i + 1}. ${step}`).join("\n");
 
   return [

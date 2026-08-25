@@ -86,9 +86,11 @@ Directly implements PRD §24–§27, plus a `meals` table the PRD assumes but do
 users
   id                 uuid pk
   telegram_user_id   bigint unique
+  username           text            -- Telegram @handle, optional
   language           text            -- uz | ru | en
   dietary_preferences text[]
   disliked_ingredients text[]
+  pantry             text[]          -- /mahsulotlarim: ingredients at home, boosts ranking only
   created_at         timestamptz
 
 meals
@@ -170,6 +172,7 @@ Implements PRD §28 scoring directly:
 
 - `filters.ts` removes meals violating **hard** restrictions (allergies, explicit exclusions) before scoring — never scored, never shown.
 - `score.ts` computes the weighted sum (ingredient match, preference match, time, budget, cuisine, variety vs. recent history, seasonal match) and returns the top candidate plus the next-best as the "🔄 Another option" fallback.
+- **Ingredient match** compares `meal.ingredients` against the user's `pantry` (set via `/mahsulotlarim`) — proportional overlap, ranking-only. An empty pantry contributes 0, so this stays fully optional per PRD §13.
 - Recently-served meals (within 7 days per group, per PRD §18) are penalized/excluded via a query against `group_meal_interactions`.
 
 ---

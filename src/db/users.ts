@@ -26,3 +26,12 @@ export async function getOrCreateUser(db: Db, telegramUserId: number, username?:
     .returning();
   return created;
 }
+
+export async function setUserPantry(db: Db, userId: string, pantry: string[]) {
+  const [updated] = await db
+    .update(users)
+    .set({ pantry })
+    .where(eq(users.id, userId))
+    .returning();
+  return updated;
+}

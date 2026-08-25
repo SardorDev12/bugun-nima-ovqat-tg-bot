@@ -1,0 +1,1 @@
+ALTER TABLE "users" ADD COLUMN "pantry" text[] DEFAULT '{}' NOT NULL;

@@ -18,6 +18,7 @@ const bot = new Bot(BOT_TOKEN);
 async function main() {
   await bot.api.setMyCommands([
     { command: "nima_ovqat", description: "Bugungi taom tavsiyasi" },
+    { command: "mahsulotlarim", description: "Uydagi mahsulotlarni belgilash" },
     { command: "yordam", description: "Yordam" },
   ]);
 

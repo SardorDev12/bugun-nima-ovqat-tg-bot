@@ -24,7 +24,8 @@ export function createBot(env: Env): Bot<BotContext> {
   // languages are added — not needed while the bot is Uzbek-only.
   bot.command("yordam", async (ctx) => {
     await ctx.reply(
-      "\"Bugun nima ovqat?\" deb yozing yoki /nima_ovqat buyrug'ini yuboring — men sizga taom tavsiya qilaman.",
+      "\"Bugun nima ovqat?\" deb yozing yoki /nima_ovqat buyrug'ini yuboring — men sizga taom tavsiya qilaman.\n\n" +
+        "/mahsulotlarim — uyingizda mavjud mahsulotlarni belgilang, shunga mos taomlarni ustuvor tavsiya qilaman.",
     );
   });
 
