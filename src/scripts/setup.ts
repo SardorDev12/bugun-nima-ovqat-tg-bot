@@ -18,7 +18,7 @@ const bot = new Bot(BOT_TOKEN);
 async function main() {
   await bot.api.setMyCommands([
     { command: "nima_ovqat", description: "Bugungi taom tavsiyasi" },
-    { command: "help", description: "Yordam" },
+    { command: "yordam", description: "Yordam" },
   ]);
 
   const webhookUrl = `${PUBLIC_URL}/telegram/${WEBHOOK_SECRET}`;
