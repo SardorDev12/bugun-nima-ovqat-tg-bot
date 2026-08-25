@@ -141,8 +141,9 @@ export const ADMIN_PAGE_HTML = `<!DOCTYPE html>
   </section>
 
   <section id="tab-users" class="panel hidden">
+    <div class="toolbar"><span class="muted" id="users-count"></span></div>
     <table>
-      <thead><tr><th>Username</th><th>Telegram ID</th><th>Language</th><th>Dietary prefs</th><th>Disliked</th><th>Joined</th></tr></thead>
+      <thead><tr><th>#</th><th>Username</th><th>Telegram ID</th><th>Language</th><th>Dietary prefs</th><th>Disliked</th><th>Joined</th></tr></thead>
       <tbody id="users-tbody"></tbody>
     </table>
   </section>
@@ -307,8 +308,10 @@ async function loadStats() {
 // ---- Users ----
 async function loadUsers() {
   const list = await api("/admin/api/users");
-  $("#users-tbody").innerHTML = list.map((u) => \`
+  $("#users-count").textContent = list.length + " users";
+  $("#users-tbody").innerHTML = list.map((u, i) => \`
     <tr>
+      <td>\${i + 1}</td>
       <td>\${u.username ? "@" + escapeHtml(u.username) : '<span class="muted">–</span>'}</td>
       <td>\${u.telegramUserId}</td>
       <td>\${escapeHtml(u.language)}</td>
@@ -316,7 +319,7 @@ async function loadUsers() {
       <td>\${escapeHtml((u.dislikedIngredients || []).join(", ")) || "–"}</td>
       <td>\${new Date(u.createdAt).toLocaleDateString()}</td>
     </tr>
-  \`).join("") || '<tr><td class="muted" colspan="6">No users yet</td></tr>';
+  \`).join("") || '<tr><td class="muted" colspan="7">No users yet</td></tr>';
 }
 
 loadMeals();
