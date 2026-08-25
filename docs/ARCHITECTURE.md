@@ -36,7 +36,15 @@
 
 ```text
 src/
-  worker.ts              # Cloudflare Workers entry point: fetch() -> webhook route + /healthz
+  worker.ts              # Cloudflare Workers entry point: fetch() -> /admin, webhook, /healthz
+  admin/
+    router.ts             # /admin* dispatcher, HTTP Basic Auth gate
+    auth.ts                # ADMIN_PASSWORD check
+    page.ts                 # single-page HTML/JS admin UI (meals CRUD, stats, users)
+    api/
+      meals.ts               # meals list/create/update/delete + input validation
+      stats.ts                # user/meal counts, interaction breakdown, top meals
+      users.ts                 # user list
   bot/
     index.ts             # createBot(env): grammY Bot factory, middleware wiring
     context.ts            # Env (Worker bindings) + BotContext (grammY Context + ctx.db) types
@@ -163,6 +171,28 @@ Implements PRD §28 scoring directly:
 - `filters.ts` removes meals violating **hard** restrictions (allergies, explicit exclusions) before scoring — never scored, never shown.
 - `score.ts` computes the weighted sum (ingredient match, preference match, time, budget, cuisine, variety vs. recent history, seasonal match) and returns the top candidate plus the next-best as the "🔄 Another option" fallback.
 - Recently-served meals (within 7 days per group, per PRD §18) are penalized/excluded via a query against `group_meal_interactions`.
+
+---
+
+## 6a. Admin panel
+
+Served from the same Worker at `/admin` — no separate deployment, no
+extra infra. A single-page vanilla HTML/JS UI (`admin/page.ts`) talks to a
+small JSON API (`admin/api/*`) under `/admin/api/*`, all gated by one
+`isAuthorized()` check in `admin/router.ts` before any route runs.
+
+- **Auth**: HTTP Basic Auth against the `ADMIN_PASSWORD` secret — the
+  browser's built-in login prompt, no extra dependency. Not hardened
+  against timing attacks; acceptable for this project's stakes, revisit
+  if that changes.
+- **Meals**: full CRUD. This is the main reason the panel exists — before
+  it, adding or fixing a dish meant editing `seed.ts` and redeploying.
+  Deleting a meal also clears its `user_meal_interactions` rows first
+  (no cascade on that foreign key).
+- **Stats**: read-only — user/meal counts, interaction counts by type,
+  top-10 meals by view count.
+- **Users**: read-only list (most recent 200) of registered users and
+  their stated dietary preferences/restrictions.
 
 ---
 

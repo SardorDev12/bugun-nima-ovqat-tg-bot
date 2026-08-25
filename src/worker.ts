@@ -1,6 +1,8 @@
 import { webhookCallback } from "grammy";
+import { handleAdminRequest } from "./admin/router.js";
 import { createBot } from "./bot/index.js";
 import type { Env } from "./bot/context.js";
+import { createDb } from "./db/edgeClient.js";
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -8,6 +10,10 @@ export default {
 
     if (request.method === "GET" && url.pathname === "/healthz") {
       return new Response("ok");
+    }
+
+    if (url.pathname === "/admin" || url.pathname.startsWith("/admin/")) {
+      return handleAdminRequest(request, env, createDb(env.DATABASE_URL));
     }
 
     if (request.method === "POST" && url.pathname === `/telegram/${env.WEBHOOK_SECRET}`) {

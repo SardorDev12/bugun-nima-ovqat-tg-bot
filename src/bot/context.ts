@@ -5,6 +5,7 @@ export interface Env {
   BOT_TOKEN: string;
   DATABASE_URL: string;
   WEBHOOK_SECRET: string;
+  ADMIN_PASSWORD: string;
 }
 
 export interface BotContext extends BaseContext {
