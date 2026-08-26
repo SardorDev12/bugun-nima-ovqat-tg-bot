@@ -201,8 +201,8 @@ small JSON API (`admin/api/*`) under `/admin/api/*`, all gated by one
 
 ## 7. Deployment flow
 
-- All work happens on `develop`; `main` is deploy-only and only updated when told to merge.
-- `wrangler deploy` is run against `main` via GitHub Actions — i.e., deploys happen from the branch that's been explicitly promoted, not automatically on every `develop` push.
+- `main` is the only branch — every push to it triggers `deploy.yml` automatically via GitHub Actions.
+- `wrangler deploy` is run against `main`'s checked-out code as part of that same workflow run.
 - Migrations run as an explicit step (`node dist/db/migrate.js`) before `wrangler deploy`, so the schema is ready before the new code goes live.
 - `wrangler secret put` runs after deploy (idempotent — safe on every run) to keep Worker secrets in sync with GitHub Actions secrets.
 - The Telegram webhook is (re-)registered via `src/scripts/setup.ts` as the final step — cheap and idempotent, so re-running it on every deploy is fine.

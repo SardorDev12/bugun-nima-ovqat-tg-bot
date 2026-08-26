@@ -63,5 +63,5 @@ npm run deploy` (needs `wrangler` authenticated locally).
 
 ## Branching
 
-All work happens on `develop`. `main` is deploy-only and is only updated
-(merged) when explicitly requested.
+`main` is the only branch. Every push to `main` deploys automatically via
+GitHub Actions.
