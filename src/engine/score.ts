@@ -16,7 +16,7 @@ const INGREDIENT_MATCH_WEIGHT = 15;
  * Cuisine Match + Variety + History.
  *
  * Ingredient Match compares `meal.ingredients` against the user's pantry
- * (/mahsulotlarim) — proportional to how much of the meal they can already
+ * (/mahsulotlar) — proportional to how much of the meal they can already
  * make. An empty pantry contributes 0, same as before pantry tracking
  * existed, so this stays optional per PRD §13.
  *

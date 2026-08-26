@@ -25,7 +25,7 @@ export function createBot(env: Env): Bot<BotContext> {
   bot.command("yordam", async (ctx) => {
     await ctx.reply(
       "\"Bugun nima ovqat?\" deb yozing yoki /nima_ovqat buyrug'ini yuboring — men sizga taom tavsiya qilaman.\n\n" +
-        "/mahsulotlarim — uyingizda mavjud mahsulotlarni belgilang, shunga mos taomlarni ustuvor tavsiya qilaman.",
+        "/mahsulotlar — uyingizda mavjud mahsulotlarni belgilang, shunga mos taomlarni ustuvor tavsiya qilaman.",
     );
   });
 

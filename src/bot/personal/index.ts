@@ -53,7 +53,7 @@ function formatPantryList(pantry: string[]): string {
   return pantry.map((item) => `• ${item}`).join("\n");
 }
 
-personal.command("mahsulotlarim", async (ctx) => {
+personal.command("mahsulotlar", async (ctx) => {
   if (!ctx.from) return;
   const input = ctx.match.trim();
   const user = await getOrCreateUser(ctx.db, ctx.from.id, ctx.from.username);
@@ -63,14 +63,14 @@ personal.command("mahsulotlarim", async (ctx) => {
       await ctx.reply(
         "Hozircha hech qanday mahsulot belgilamagansiz.\n\n" +
           "Uyingizda mavjud mahsulotlarni vergul bilan ajratib yozing, masalan:\n" +
-          "/mahsulotlarim guruch, piyoz, kartoshka, sabzi",
+          "/mahsulotlar guruch, piyoz, kartoshka, sabzi",
       );
       return;
     }
 
     await ctx.reply(
       `🧺 **Sizning mahsulotlaringiz:**\n\n${formatPantryList(user.pantry)}\n\n` +
-        "Yangilash uchun /mahsulotlarim dan keyin to'liq ro'yxatni qayta yozing.",
+        "Yangilash uchun /mahsulotlar dan keyin to'liq ro'yxatni qayta yozing.",
       {
         parse_mode: "Markdown",
         reply_markup: new InlineKeyboard().text("🗑 Tozalash", "pantry_clear"),
