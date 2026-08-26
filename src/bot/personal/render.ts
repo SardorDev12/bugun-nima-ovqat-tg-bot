@@ -27,6 +27,15 @@ export function buildMealKeyboard(mealId: string): InlineKeyboard {
     .text("🔄 Boshqa variant", `another:${mealId}`);
 }
 
+// "Boshqa variant" here must keep filtering by the same ingredient
+// (/qidir), unlike the plain another:<mealId> callback which picks from
+// all meals — so the ingredient rides along in the callback data.
+export function buildIngredientMealKeyboard(mealId: string, ingredient: string): InlineKeyboard {
+  return new InlineKeyboard()
+    .text("👨‍🍳 Retsept", `recipe:${mealId}`)
+    .text("🔄 Boshqa variant", `ia:${ingredient}:${mealId}`);
+}
+
 export function formatRecipeMessage(meal: Meal, pantry: readonly string[] = []): string {
   const ingredientLines = meal.ingredientDetails
     .map((line, i) => {

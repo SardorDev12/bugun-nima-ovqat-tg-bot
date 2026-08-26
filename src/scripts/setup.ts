@@ -19,7 +19,7 @@ async function main() {
   await bot.api.setMyCommands([
     { command: "nima_ovqat", description: "Bugungi taom tavsiyasi" },
     { command: "mahsulotlar", description: "Uydagi mahsulotlarni belgilash" },
-    { command: "yordam", description: "Yordam" },
+    { command: "qidir", description: "Bitta mahsulot bo'yicha taom qidirish" },
   ]);
 
   const webhookUrl = `${PUBLIC_URL}/telegram/${WEBHOOK_SECRET}`;

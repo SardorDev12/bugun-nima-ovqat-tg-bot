@@ -19,16 +19,6 @@ export function createBot(env: Env): Bot<BotContext> {
 
   bot.use(personal);
 
-  // Command names are Uzbek-only for now. Telegram supports per-language
-  // command menus (setMyCommands' language_code param) for when other
-  // languages are added — not needed while the bot is Uzbek-only.
-  bot.command("yordam", async (ctx) => {
-    await ctx.reply(
-      "\"Bugun nima ovqat?\" deb yozing yoki /nima_ovqat buyrug'ini yuboring — men sizga taom tavsiya qilaman.\n\n" +
-        "/mahsulotlar — uyingizda mavjud mahsulotlarni belgilang, shunga mos taomlarni ustuvor tavsiya qilaman.",
-    );
-  });
-
   bot.catch((err) => {
     console.error("Bot error:", err.error);
   });

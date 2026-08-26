@@ -4,7 +4,12 @@ import { meals, userMealInteractions } from "../../db/schema.js";
 import { getOrCreateUser, setUserPantry } from "../../db/users.js";
 import { rankMealsForUser } from "../../engine/meals.js";
 import type { BotContext } from "../context.js";
-import { buildMealKeyboard, formatMealMessage, formatRecipeMessage } from "./render.js";
+import {
+  buildIngredientMealKeyboard,
+  buildMealKeyboard,
+  formatMealMessage,
+  formatRecipeMessage,
+} from "./render.js";
 
 export const personal = new Composer<BotContext>();
 
@@ -93,6 +98,68 @@ personal.callbackQuery("pantry_clear", async (ctx) => {
   await setUserPantry(ctx.db, user.id, []);
   await ctx.answerCallbackQuery({ text: "Tozalandi." });
   await ctx.reply("🗑 Mahsulotlar ro'yxati tozalandi.");
+});
+
+personal.command("qidir", async (ctx) => {
+  if (!ctx.from) return;
+  const ingredient = ctx.match.trim().toLowerCase();
+
+  if (ingredient.length === 0) {
+    await ctx.reply(
+      "Qaysi mahsulot bilan taom qidirishni istaysiz? Mahsulot nomini yozing, masalan:\n" +
+        "/qidir tovuq go'shti",
+    );
+    return;
+  }
+
+  const user = await getOrCreateUser(ctx.db, ctx.from.id, ctx.from.username);
+  const ranked = await rankMealsForUser(ctx.db, user.id);
+  const match = ranked.find((r) => r.meal.ingredients.includes(ingredient))?.meal;
+
+  if (!match) {
+    await ctx.reply(`"${ingredient}" bilan tayyorlanadigan taom topilmadi.`);
+    return;
+  }
+
+  await ctx.db.insert(userMealInteractions).values({
+    userId: user.id,
+    mealId: match.id,
+    interactionType: "viewed",
+  });
+
+  await ctx.reply(formatMealMessage(match), {
+    parse_mode: "Markdown",
+    reply_markup: buildIngredientMealKeyboard(match.id, ingredient),
+  });
+});
+
+personal.callbackQuery(/^ia:(.+):(.+)$/, async (ctx) => {
+  if (!ctx.from) return;
+  const ingredient = ctx.match[1];
+  const currentMealId = ctx.match[2];
+  const user = await getOrCreateUser(ctx.db, ctx.from.id, ctx.from.username);
+
+  const ranked = await rankMealsForUser(ctx.db, user.id);
+  const match = ranked.find(
+    (r) => r.meal.ingredients.includes(ingredient) && r.meal.id !== currentMealId,
+  )?.meal;
+
+  if (!match) {
+    await ctx.answerCallbackQuery({ text: "Boshqa variant qolmadi." });
+    return;
+  }
+
+  await ctx.db.insert(userMealInteractions).values({
+    userId: user.id,
+    mealId: match.id,
+    interactionType: "viewed",
+  });
+
+  await ctx.answerCallbackQuery();
+  await ctx.reply(formatMealMessage(match), {
+    parse_mode: "Markdown",
+    reply_markup: buildIngredientMealKeyboard(match.id, ingredient),
+  });
 });
 
 personal.on("message:text", async (ctx) => {
