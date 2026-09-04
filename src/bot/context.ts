@@ -10,4 +10,5 @@ export interface Env {
 
 export interface BotContext extends BaseContext {
   db: Db;
+  webAppUrl: string;
 }

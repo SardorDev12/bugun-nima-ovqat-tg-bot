@@ -36,7 +36,7 @@
 
 ```text
 src/
-  worker.ts              # Cloudflare Workers entry point: fetch() -> /admin, webhook, /healthz
+  worker.ts              # Cloudflare Workers entry point: fetch() -> /admin, /app, /api/webapp, webhook, /healthz
   admin/
     router.ts             # /admin* dispatcher, HTTP Basic Auth gate
     auth.ts                # ADMIN_PASSWORD check
@@ -45,6 +45,10 @@ src/
       meals.ts               # meals list/create/update/delete + input validation
       stats.ts                # user/meal counts, interaction breakdown, top meals
       users.ts                 # user list
+  webapp/                # Telegram Mini App (launched from /start or the chat menu button)
+    page.ts                # single-page HTML/JS UI served at GET /app
+    auth.ts                 # validates Telegram WebApp initData (HMAC, keyed off BOT_TOKEN)
+    api.ts                   # POST /api/webapp/* — recommend, search, recipe, pantry get/set
   bot/
     index.ts             # createBot(env): grammY Bot factory, middleware wiring
     context.ts            # Env (Worker bindings) + BotContext (grammY Context + ctx.db) types
@@ -196,6 +200,34 @@ small JSON API (`admin/api/*`) under `/admin/api/*`, all gated by one
   top-10 meals by view count.
 - **Users**: read-only list (most recent 200) of registered users and
   their stated dietary preferences/restrictions.
+
+---
+
+## 6b. Telegram Mini App
+
+A user-facing Mini App, launched from the "🍽 Ilovani ochish" button on
+`/start` or the persistent chat menu button — no separate bot or hosting,
+same Worker as everything else. Covers the same three flows as the chat
+commands (`/nima_ovqat`, `/mahsulotlar`, `/qidir`) as tap-friendly tabs
+instead of typed commands.
+
+- Served at `GET /app` (`webapp/page.ts`) — a single vanilla HTML/JS page,
+  no build step, styled from `Telegram.WebApp.themeParams` so it matches
+  the user's Telegram theme (light/dark) automatically.
+- Talks to a small JSON API at `POST /api/webapp/*` (`webapp/api.ts`):
+  `recommend`, `search`, `recipe`, `pantry/get`, `pantry/set`.
+- **Auth**: every API call carries Telegram's `initData` string, which
+  `webapp/auth.ts` verifies with the HMAC-SHA256 scheme Telegram documents
+  (keyed off `BOT_TOKEN`, which only the Worker knows) — this is what
+  actually proves a request came from Telegram for this bot, since
+  anything else in `initData` is client-supplied and can't be trusted on
+  its own. No separate password; being able to open the Mini App from
+  inside Telegram *is* the auth.
+- The bot's `web_app` buttons (`/start`'s inline button and the chat menu
+  button set via `setChatMenuButton` in `src/scripts/setup.ts`) point at
+  `${origin}/app`, where `origin` is read off the incoming webhook
+  request in `worker.ts` rather than stored as a secret — one less thing
+  to keep in sync if the Worker's URL ever changes.
 
 ---
 

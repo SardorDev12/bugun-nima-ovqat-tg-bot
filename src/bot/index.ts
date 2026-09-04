@@ -8,12 +8,14 @@ import { personal } from "./personal/index.js";
  * secrets only arrive via the `env` param passed to fetch() — so there's no
  * module-level singleton the way an always-on Node server would have one.
  */
-export function createBot(env: Env): Bot<BotContext> {
+export function createBot(env: Env, origin: string): Bot<BotContext> {
   const bot = new Bot<BotContext>(env.BOT_TOKEN);
   const db = createDb(env.DATABASE_URL);
+  const webAppUrl = `${origin}/app`;
 
   bot.use((ctx, next) => {
     ctx.db = db;
+    ctx.webAppUrl = webAppUrl;
     return next();
   });
 

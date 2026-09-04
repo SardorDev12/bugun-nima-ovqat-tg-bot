@@ -35,6 +35,16 @@ real Telegram updates, expose it with a tunnel (e.g. `cloudflared tunnel
 list. Protected by HTTP Basic Auth: any username, password is
 `ADMIN_PASSWORD`.
 
+### Mini App
+
+`/app` — a Telegram Mini App covering the same three flows as the chat
+commands (today's recommendation, ingredient search, pantry) as tabs
+instead of typed commands. Reachable from the "🍽 Ilovani ochish" button on
+`/start` or the chat's menu button. It only works when opened from inside
+Telegram (it authenticates every request using Telegram's `initData`, not
+a password), so visiting the URL directly in a browser just shows a
+"faqat Telegram ichida ochiladi" message.
+
 ## Deploy (Cloudflare Workers)
 
 Deploys are automated via GitHub Actions (`.github/workflows/deploy.yml`):

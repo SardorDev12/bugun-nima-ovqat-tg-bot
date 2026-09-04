@@ -41,7 +41,9 @@ async function recommendToday(ctx: BotContext) {
 
 personal.command("start", async (ctx) => {
   await ctx.reply(
-    "Salom! Men — Nima ovqat? botiman. \"Bugun nima ovqat?\" deb yozing yoki /nima_ovqat buyrug'ini yuboring.",
+    "Salom! Men — Nima ovqat? botiman. \"Bugun nima ovqat?\" deb yozing yoki /nima_ovqat buyrug'ini yuboring.\n\n" +
+      "Ilovada esa taomlarni qulayroq ko'rib, mahsulotlaringizni boshqarishingiz mumkin.",
+    { reply_markup: new InlineKeyboard().webApp("🍽 Ilovani ochish", ctx.webAppUrl) },
   );
 });
 

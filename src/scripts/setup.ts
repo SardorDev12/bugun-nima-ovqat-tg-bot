@@ -22,6 +22,10 @@ async function main() {
     { command: "qidir", description: "Bitta mahsulot bo'yicha taom qidirish" },
   ]);
 
+  await bot.api.setChatMenuButton({
+    menu_button: { type: "web_app", text: "Ilova", web_app: { url: `${PUBLIC_URL}/app` } },
+  });
+
   const webhookUrl = `${PUBLIC_URL}/telegram/${WEBHOOK_SECRET}`;
   await bot.api.setWebhook(webhookUrl);
   console.log(`Webhook set to ${webhookUrl}`);
