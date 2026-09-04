@@ -11,9 +11,11 @@ function required(name: string): string {
 
 const BOT_TOKEN = required("BOT_TOKEN");
 const WEBHOOK_SECRET = required("WEBHOOK_SECRET");
-// Strip any trailing slash so `${PUBLIC_URL}/app` etc. never doubles up
-// (e.g. if the secret was pasted from a browser bar as ".../\").
-const PUBLIC_URL = required("PUBLIC_URL").replace(/\/+$/, "");
+// Parse and take .origin (scheme://host, no trailing slash/path) instead of
+// raw string concatenation — the URL parser strips stray whitespace/newlines
+// that can sneak into a pasted secret, which plain trimming would miss and
+// which otherwise breaks host resolution when concatenated into a path.
+const PUBLIC_URL = new URL(required("PUBLIC_URL")).origin;
 
 const bot = new Bot(BOT_TOKEN);
 
