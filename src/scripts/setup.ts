@@ -21,7 +21,7 @@ const bot = new Bot(BOT_TOKEN);
 
 async function main() {
   await bot.api.setMyCommands([
-    { command: "start", description: "Botni ishga tushirish" },
+    { command: "start", description: "Interaktiv ilovani ochish" },
     { command: "nima_ovqat", description: "Bugungi taom tavsiyasi" },
     { command: "mahsulotlar", description: "Uydagi mahsulotlarni belgilash" },
     { command: "qidir", description: "Bitta mahsulot bo'yicha taom qidirish" },
@@ -31,13 +31,10 @@ async function main() {
   await bot.api.setWebhook(webhookUrl);
   console.log(`Webhook set to ${webhookUrl}`);
 
-  // Best-effort: the "🍽 Ilovani ochish" button on /start reaches the Mini
-  // App independently of this, so a failure here shouldn't block the
-  // webhook registration above (which the bot can't function without).
+  // Menu button shows the command list — the "🍽 Ilovani ochish" button on
+  // /start is the way into the Mini App instead.
   try {
-    await bot.api.setChatMenuButton({
-      menu_button: { type: "web_app", text: "Ilova", web_app: { url: `${PUBLIC_URL}/app` } },
-    });
+    await bot.api.setChatMenuButton({ menu_button: { type: "commands" } });
   } catch (err) {
     console.error("Failed to set chat menu button (non-fatal):", err);
   }
